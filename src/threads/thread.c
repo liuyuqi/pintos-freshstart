@@ -153,7 +153,7 @@ thread_tick (void)
 void
 thread_try_wakeup (struct thread *t, void *aux)
 {
-  if (t->sleeping==true && (t->sleep_start_time + t->sleep_duration >= timer_ticks() )) {
+  if (t->sleeping==true && (timer_elapsed(t->sleep_start_time) >= t->sleep_duration )) {
     ASSERT (t->sleeping == true);
     enum intr_level old_level;
     old_level = intr_disable();
@@ -161,7 +161,7 @@ thread_try_wakeup (struct thread *t, void *aux)
     t->sleeping = false;
     t->sleep_start_time = 0;
     t->sleep_duration = 0;
-    printf("\nwoken up %d: %s!\n", t->tid, t->name);
+    //printf("\nwoken up %d: %s!\n", t->tid, t->name);
     intr_set_level(old_level);
   }
 }
