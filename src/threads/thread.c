@@ -11,6 +11,7 @@
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+//#include "devices/timer.c" /*=====Yuqi's code=====*/
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -133,12 +134,39 @@ thread_tick (void)
 #endif
   else
     kernel_ticks++;
+  /*=====Yuqi's code start=====*/
+  enum intr_level old_level;
+  old_level = intr_disable();
+  thread_foreach (thread_try_wakeup, NULL);
+  intr_set_level (old_level);
+  /*=====Yuqi's code end=====*/
 
   /* Enforce preemption. */
   if (++thread_ticks >= TIME_SLICE)
     intr_yield_on_return ();
 }
 
+  /*=====Yuqi's code start=====*/
+/*Try to wake up a previously blocked thread, which is already okay
+ * to wake up.
+ */
+void
+thread_try_wakeup (struct thread *t, void *aux)
+{
+  if (t->sleeping==true && (t->sleep_start_time + t->sleep_duration >= timer_ticks() )) {
+    ASSERT (t->sleeping == true);
+    enum intr_level old_level;
+    old_level = intr_disable();
+    thread_unblock(t);
+    t->sleeping = false;
+    t->sleep_start_time = 0;
+    t->sleep_duration = 0;
+    printf("\nwoken up %d: %s!\n", t->tid, t->name);
+    intr_set_level(old_level);
+  }
+}
+  /*=====Yuqi's code end=====*/
+  
 /* Prints thread statistics. */
 void
 thread_print_stats (void) 
@@ -184,6 +212,10 @@ thread_create (const char *name, int priority,
   init_thread (t, name, priority);
   tid = t->tid = allocate_tid ();
 
+  t->sleeping = false;       /*=====Yuqi=====*/
+  t->sleep_start_time = 0;  /*=====Yuqi=====*/
+  t->sleep_duration = 0;    /*=====Yuqi=====*/
+  
   /* Prepare thread for first run by initializing its stack.
      Do this atomically so intermediate values for the 'stack' 
      member cannot be observed. */

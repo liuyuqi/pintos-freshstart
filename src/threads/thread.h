@@ -89,6 +89,9 @@ struct thread
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
     struct list_elem allelem;           /* List element for all threads list. */
+    bool sleeping;                  /*=====Yuqi=====if 1, the thread is sleeping (alarm_clock)*/
+    int64_t sleep_start_time;		/*=====Yuqi=====*/
+    int64_t sleep_duration;        /*=====Yuqi=====*/
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
@@ -118,6 +121,7 @@ tid_t thread_create (const char *name, int priority, thread_func *, void *);
 
 void thread_block (void);
 void thread_unblock (struct thread *);
+void thread_try_wakeup (struct thread *, void *);  /*=====Yuqi's code=====*/
 
 struct thread *thread_current (void);
 tid_t thread_tid (void);

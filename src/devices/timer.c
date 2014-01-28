@@ -92,8 +92,25 @@ timer_sleep (int64_t ticks)
   int64_t start = timer_ticks ();
 
   ASSERT (intr_get_level () == INTR_ON);
+  /* Pintos original code: 
   while (timer_elapsed (start) < ticks) 
     thread_yield ();
+    * /
+  /***** Yuqi's code start *****/
+  //struct lock lock_timer_sleep;
+  //lock_init(&lock_timer_sleep);
+  //lock_acquire(&lock_timer_sleep);
+  struct thread *t = thread_current();
+  //printf("ready to asleep %d: %s\n", t->tid, t->name);
+  enum intr_level old_level;
+  old_level = intr_disable();
+  t->sleeping = true;
+  t->sleep_start_time = start;
+  t->sleep_duration = ticks;
+  thread_block ();
+  //lock_release(&lock_timer_sleep);
+  intr_set_level(old_level);
+  /***** Yuqi's code end *****/
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
