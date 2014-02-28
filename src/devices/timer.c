@@ -97,9 +97,6 @@ timer_sleep (int64_t ticks)
     thread_yield ();
     * /
   /***** Yuqi's code start *****/
-  //struct lock lock_timer_sleep;
-  //lock_init(&lock_timer_sleep);
-  //lock_acquire(&lock_timer_sleep);
   struct thread *t = thread_current();
   //printf("ready to asleep %d: %s\n", t->tid, t->name);
   enum intr_level old_level;
@@ -108,7 +105,6 @@ timer_sleep (int64_t ticks)
   t->sleep_start_time = start;
   t->sleep_duration = ticks;
   thread_block ();
-  //lock_release(&lock_timer_sleep);
   intr_set_level(old_level);
   /***** Yuqi's code end *****/
 }
