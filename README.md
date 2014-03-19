@@ -36,10 +36,10 @@ My implementation
 
 * Created <code>shell.h</code> and <code>shell.c</code> , as in the repository.
 * Added the following to <code>lib/stdio.h</code> :
- <pre><code> 
- #include\<devices/input.h\>
- void getline (char*); /*This is my newly-implemented getline function*/
- </code></pre>
+
+<code>#include \<devices/input.h\> </code>
+
+<code>void getline (char*); /*This is my newly-implemented getline function*/ </code>
 
 * Added the following to <code>lib/stdio.c</code>:
  <pre><code>void getline(char* in)
