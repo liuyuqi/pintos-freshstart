@@ -64,3 +64,19 @@ My implementation
    modified: <code>#include "lib/user/syscall.h"</code>
 
 Done.
+
+What to do next?
+----------------
+Writing a shell is like reinventing the wheel. Therefore, whenever a working skeleton is successfully created, we should resume our work:
+* A basic working file system (or else why do you need the shell?)
+* Once a file system is done, we can try to modify the shell into a user program (instead of inside the kernel), and thus a user process when ran.
+* Implement other system calls which are needed by built-in shell commands: 
+  # fork and exec: to be able to run a program and make it a new process.
+  # signals: makes the shell able to handle background execution.
+  # and perhaps many more...
+
+I do have a working shell on Linux/Unix which can be a good reference. I'm working on it as OS homework in Spring 2014:
+
+    https://github.com/liuyuqi/Operating-System-Homework-UD-CISC-663
+
+Have fun hacking the kernel (and the shell)!
