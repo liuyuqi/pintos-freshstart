@@ -7,6 +7,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
+/* Yuqi's change */
+#include "devices/input.h"
+
 /* Include lib/user/stdio.h or lib/kernel/stdio.h, as
    appropriate. */
 #include_next <stdio.h>
@@ -22,6 +25,9 @@ int vprintf (const char *, va_list) PRINTF_FORMAT (1, 0);
 int vsnprintf (char *, size_t, const char *, va_list) PRINTF_FORMAT (3, 0);
 int putchar (int);
 int puts (const char *);
+
+/* Yuqi's change */
+void getline(char*);
 
 /* Nonstandard functions. */
 void hex_dump (uintptr_t ofs, const void *, size_t size, bool ascii);

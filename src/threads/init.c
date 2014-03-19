@@ -22,6 +22,10 @@
 #include "threads/palloc.h"
 #include "threads/pte.h"
 #include "threads/thread.h"
+
+/*Yuqi: make our shell happen*/
+#include "threads/shell.h"
+
 #ifdef USERPROG
 #include "userprog/process.h"
 #include "userprog/exception.h"
@@ -128,9 +132,20 @@ main (void)
 #endif
 
   printf ("Boot complete.\n");
-  
+
+/* Yuqi: Make our shell happen! 
+ * This is a little weird, since a shell is generally
+ * considered to be a user program instead of inside a 
+ * kernel. I'll just leave it here until someone else 
+ * (hopefully that'll be me ==) figured it out.*/
+#ifdef SHELL
+  shell();
+#endif  
+
+#ifndef SHELL
   /* Run actions specified on kernel command line. */
   run_actions (argv);
+#endif
 
   /* Finish up. */
   shutdown ();

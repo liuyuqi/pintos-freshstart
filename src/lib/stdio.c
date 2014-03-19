@@ -5,6 +5,22 @@
 #include <stdint.h>
 #include <string.h>
 
+/* Yuqi's change:
+ * getline() function: gets a line from input. */
+void getline(char* in)
+{
+	char cmd[255];
+	int i = 0;
+	while ((cmd[i] = input_getc()) != '\r') {
+	    printf("%c", cmd[i]);
+	    i++;
+	}
+	
+	cmd[i+1] = '\0';
+	strlcpy(in, cmd, strlen(cmd));
+	printf("\n");
+}
+
 /* Auxiliary data for vsnprintf_helper(). */
 struct vsnprintf_aux 
   {
