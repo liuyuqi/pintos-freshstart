@@ -39,7 +39,7 @@ My implementation
 
 <code>#include \<devices/input.h\> </code>
 
-<code>void getline (char*); /*This is my newly-implemented getline function*/ </code>
+<code>void getline (char\*); /\*This is my newly-implemented getline function*/ </code>
 
 * Added the following to <code>lib/stdio.c</code>:
  <pre><code>void getline(char* in)
@@ -69,11 +69,11 @@ What to do next?
 ----------------
 Writing a shell is like reinventing the wheel. Therefore, whenever a working skeleton is successfully created, we should resume our work:
 * A basic working file system (or else why do you need the shell?)
-* Once a file system is done, we can try to modify the shell into a user program (instead of inside the kernel), and thus a user process when ran.
+* Once a file system is done, we can try to modify the shell into a user program (instead of inside the kernel), and thus a user process when executed.
 * Implement other system calls which are needed by built-in shell commands: 
-  # fork and exec: to be able to run a program and make it a new process.
-  # signals: makes the shell able to handle background execution.
-  # and perhaps many more...
+  1. fork and exec: to be able to run a program and make it a new process.
+  2. signals: makes the shell able to handle background execution.
+  3. and perhaps many more...
 
 I do have a working shell on Linux/Unix which can be a good reference. I'm working on it as OS homework in Spring 2014:
 
