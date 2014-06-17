@@ -139,13 +139,13 @@ main (void)
  * kernel. I'll just leave it here until someone else 
  * (hopefully that'll be me ==) figured it out.*/
 #ifdef SHELL
-  shell();
+  //shell();
 #endif  
 
-#ifndef SHELL
+//#ifndef SHELL
   /* Run actions specified on kernel command line. */
   run_actions (argv);
-#endif
+//#endif
 
   /* Finish up. */
   shutdown ();

@@ -276,10 +276,33 @@ thread_unblock (struct thread *t)
 
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
-  list_push_back (&ready_list, &t->elem);
+  //list_push_back (&ready_list, &t->elem);
+/*=====Yuqi's code start=====*/  
+  bool need_schedule = false;
+  struct list_elem *highest_pri = list_begin(&ready_list);
+  need_schedule = thread_priority_less(&t->elem, highest_pri, NULL);
+  list_insert_ordered (&ready_list, &t->elem, 
+                  thread_priority_less, NULL); 
+/*=====Yuqi's code end=====*/
   t->status = THREAD_READY;
+  if (need_schedule) /*=====Yuqi's code=====*/
+      schedule(); /*=====Yuqi's code=====*/
   intr_set_level (old_level);
 }
+
+/*=====Yuqi's code start=====*/
+/* Written for the list_insert_ordered() function */
+bool
+thread_priority_less (struct list_elem *elem,
+                      struct list_elem *e, void *aux)
+{
+    int priority_in_list = list_entry(e, struct thread, elem)->priority;
+    int priority_elem = list_entry(elem, struct thread, elem)->priority;
+    if (priority_in_list <= priority_elem)
+        return true;
+    else return false;
+}
+/*=====Yuqi's code end=====*/
 
 /* Returns the name of the running thread. */
 const char *
@@ -375,6 +398,23 @@ void
 thread_set_priority (int new_priority) 
 {
   thread_current ()->priority = new_priority;
+  
+/*=====Yuqi's code start=====*/  
+  bool need_schedule = false;
+  enum intr_level old_level;
+  old_level = intr_disable();
+  
+  int highest_priority = list_entry(list_begin(&ready_list), \
+                   struct thread, elem)->priority;
+  if (new_priority > highest_priority)
+    need_schedule = true;
+
+  list_insert_ordered (&ready_list, &thread_current()->elem, 
+                  thread_priority_less, NULL);
+  if (need_schedule)
+    schedule();
+  intr_set_level(old_level);
+/*=====Yuqi's code end=====*/
 }
 
 /* Returns the current thread's priority. */
@@ -590,6 +630,7 @@ schedule (void)
   struct thread *next = next_thread_to_run ();
   struct thread *prev = NULL;
 
+  printf ("in schedule(): current thread is tid = %d, status is %d\n", cur->tid, cur->status);
   ASSERT (intr_get_level () == INTR_OFF);
   ASSERT (cur->status != THREAD_RUNNING);
   ASSERT (is_thread (next));
