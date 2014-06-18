@@ -33,7 +33,7 @@ prepare_for_next_cycle(void);
  * string. The function is to prevent this, which can be a 
  * disaster, from happening.
  * 
- * Also, if anyone want to perform this check, it's always fun to
+ * Also, if anyone wants to perform this check, it's always fun to
  * implement this functionality in the Pintos C library, which I 
  * believe is a great practise!!! */
 int
