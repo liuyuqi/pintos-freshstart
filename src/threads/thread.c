@@ -87,6 +87,7 @@ static tid_t allocate_tid (void);
 void
 thread_init (void) 
 {
+  //printf("## Entering thread_init()...\n");
   ASSERT (intr_get_level () == INTR_OFF);
 
   lock_init (&tid_lock);
@@ -98,6 +99,12 @@ thread_init (void)
   init_thread (initial_thread, "main", PRI_DEFAULT);
   initial_thread->status = THREAD_RUNNING;
   initial_thread->tid = allocate_tid ();
+  
+/*=====Yuqi's code start=====*/
+  list_push_front (&ready_list, &initial_thread->elem);
+  list_push_front (&all_list, &initial_thread->allelem);
+/*=====Yuqi's code end=====*/
+  //printf("## Created thread tid = %d, Exiting thread_init()...\n", initial_thread->tid);
 }
 
 /* Starts preemptive thread scheduling by enabling interrupts.
@@ -122,6 +129,7 @@ thread_start (void)
 void
 thread_tick (void) 
 {
+  //printf("## Entering thread_tick()...\n"); /*=====Yuqi's code=====*/
   struct thread *t = thread_current ();
 
   /* Update statistics. */
@@ -193,6 +201,7 @@ tid_t
 thread_create (const char *name, int priority,
                thread_func *function, void *aux) 
 {
+  //printf("## ENTERing thread_create()...\n");
   struct thread *t;
   struct kernel_thread_frame *kf;
   struct switch_entry_frame *ef;
@@ -239,6 +248,7 @@ thread_create (const char *name, int priority,
 
   /* Add to run queue. */
   thread_unblock (t);
+  //printf("## Thread tid = %d created, EXITing thread_create()...\n", tid);
 
   return tid;
 }
@@ -271,22 +281,40 @@ void
 thread_unblock (struct thread *t) 
 {
   enum intr_level old_level;
+  struct thread *cur = NULL;
 
   ASSERT (is_thread (t));
 
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
   //list_push_back (&ready_list, &t->elem);
-/*=====Yuqi's code start=====*/  
-  bool need_schedule = false;
-  struct list_elem *highest_pri = list_begin(&ready_list);
-  need_schedule = thread_priority_less(&t->elem, highest_pri, NULL);
-  list_insert_ordered (&ready_list, &t->elem, 
-                  thread_priority_less, NULL); 
+
+/*=====Yuqi's code start=====*/
+    //printf("## This is in thread_unblock()\n");  
+
+    list_insert_ordered (&ready_list, &t->elem, 
+                    thread_priority_less, NULL);
+
+    //just to make sure it is inserted.
+/*
+    struct list_elem *e;
+    struct thread *th;
+    for (e = list_begin(&ready_list); e != list_tail(&ready_list);
+               e = list_next(e)) {
+        th = list_entry(e, struct thread, elem);
+        printf("## Thread tid = %d, name = %s, status = %d.\n", 
+                th->tid, (th->name==NULL)?"NULL":th->name, th->status);
+    }
+    */
+
 /*=====Yuqi's code end=====*/
+
+  //printf("The newly created thread t is tid = %d\n", t->tid);
   t->status = THREAD_READY;
-  if (need_schedule) /*=====Yuqi's code=====*/
-      schedule(); /*=====Yuqi's code=====*/
+  thread_current ()->status = THREAD_READY;
+  /**** Important notice!!
+   *     It's not safe to call printf() in this area!!! ****/
+  schedule(); /*=====Yuqi's code=====*/
   intr_set_level (old_level);
 }
 
@@ -308,6 +336,7 @@ thread_priority_less (struct list_elem *elem,
 const char *
 thread_name (void) 
 {
+  //printf("## In thread_name()...\n");
   return thread_current ()->name;
 }
 
@@ -317,6 +346,7 @@ thread_name (void)
 struct thread *
 thread_current (void) 
 {
+  //printf("Entering thread_current()...\n");
   struct thread *t = running_thread ();
   
   /* Make sure T is really a thread.
@@ -334,6 +364,7 @@ thread_current (void)
 tid_t
 thread_tid (void) 
 {
+  //printf("## In thread_tid()...\n");
   return thread_current ()->tid;
 }
 
@@ -352,6 +383,7 @@ thread_exit (void)
      and schedule another process.  That process will destroy us
      when it calls thread_schedule_tail(). */
   intr_disable ();
+  //printf("## In thread_exit()...\n");
   list_remove (&thread_current()->allelem);
   thread_current ()->status = THREAD_DYING;
   schedule ();
@@ -363,6 +395,7 @@ thread_exit (void)
 void
 thread_yield (void) 
 {
+  //printf("## In thread_yield()...\n");
   struct thread *cur = thread_current ();
   enum intr_level old_level;
   
@@ -397,6 +430,7 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
+  //printf("## Entering thread_set_priority()\n");
   thread_current ()->priority = new_priority;
   
 /*=====Yuqi's code start=====*/  
@@ -421,6 +455,7 @@ thread_set_priority (int new_priority)
 int
 thread_get_priority (void) 
 {
+  printf("## In thread_get_priority()...\n");
   return thread_current ()->priority;
 }
 
@@ -468,6 +503,7 @@ static void
 idle (void *idle_started_ UNUSED) 
 {
   struct semaphore *idle_started = idle_started_;
+  //printf("## In idle()...\n"); /*=====Yuqi's code=====*/
   idle_thread = thread_current ();
   sema_up (idle_started);
 
@@ -530,6 +566,7 @@ is_thread (struct thread *t)
 static void
 init_thread (struct thread *t, const char *name, int priority)
 {
+  //printf("## Entering init_thread()...\n");
   ASSERT (t != NULL);
   ASSERT (PRI_MIN <= priority && priority <= PRI_MAX);
   ASSERT (name != NULL);
@@ -541,6 +578,7 @@ init_thread (struct thread *t, const char *name, int priority)
   t->priority = priority;
   t->magic = THREAD_MAGIC;
   list_push_back (&all_list, &t->allelem);
+  //printf("## Exiting init_thread().\n");
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
@@ -567,7 +605,8 @@ next_thread_to_run (void)
   if (list_empty (&ready_list))
     return idle_thread;
   else
-    return list_entry (list_pop_front (&ready_list), struct thread, elem);
+    //return list_entry (list_pop_front (&ready_list), struct thread, elem);
+    return list_entry (list_front(&ready_list), struct thread, elem);
 }
 
 /* Completes a thread switch by activating the new thread's page
@@ -630,7 +669,6 @@ schedule (void)
   struct thread *next = next_thread_to_run ();
   struct thread *prev = NULL;
 
-  printf ("in schedule(): current thread is tid = %d, status is %d\n", cur->tid, cur->status);
   ASSERT (intr_get_level () == INTR_OFF);
   ASSERT (cur->status != THREAD_RUNNING);
   ASSERT (is_thread (next));
