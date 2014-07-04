@@ -97,10 +97,10 @@ timer_sleep (int64_t ticks)
     thread_yield ();
     * /
   /***** Yuqi's code start *****/
-  struct thread *t = thread_current();
-  //printf("ready to asleep %d: %s\n", t->tid, t->name);
   enum intr_level old_level;
-  old_level = intr_disable();
+  old_level = intr_disable();  
+  struct thread *t = thread_current();
+  //printf("****ready to asleep %d: %s\n", t->tid, t->name);
   t->sleeping = true;
   t->sleep_start_time = start;
   t->sleep_duration = ticks;

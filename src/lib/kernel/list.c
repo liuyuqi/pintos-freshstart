@@ -50,7 +50,7 @@ is_interior (struct list_elem *elem)
 }
 
 /* Returns true if ELEM is a tail, false otherwise. */
-static inline bool
+bool
 is_tail (struct list_elem *elem)
 {
   return elem != NULL && elem->prev != NULL && elem->next == NULL;

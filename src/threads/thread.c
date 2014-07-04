@@ -27,6 +27,7 @@ static struct list ready_list;
 /* List of all processes.  Processes are added to this list
    when they are first scheduled and removed when they exit. */
 static struct list all_list;
+static struct list sleep_list; /*=====Yuqi's code=====*/
 
 /* Idle thread. */
 static struct thread *idle_thread;
@@ -93,6 +94,7 @@ thread_init (void)
   lock_init (&tid_lock);
   list_init (&ready_list);
   list_init (&all_list);
+  list_init (&sleep_list);/*=====Yuqi's code=====*/
 
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
@@ -154,22 +156,21 @@ thread_tick (void)
 }
 
   /*=====Yuqi's code start=====*/
-/*Try to wake up a previously blocked thread, which is already okay
- * to wake up.
+/* Try to wake up a previously blocked thread, which is already okay
+ * to wake up. This function must be called with interrupt disabled.
  */
 void
 thread_try_wakeup (struct thread *t, void *aux)
 {
   if (t->sleeping==true && (timer_elapsed(t->sleep_start_time) >= t->sleep_duration )) {
     ASSERT (t->sleeping == true);
-    enum intr_level old_level;
-    old_level = intr_disable();
-    thread_unblock(t);
+    ASSERT (t->status == THREAD_BLOCKED);
     t->sleeping = false;
     t->sleep_start_time = 0;
     t->sleep_duration = 0;
+    list_remove(&t->elem);
+    thread_unblock(t);
     //printf("\nwoken up %d: %s!\n", t->tid, t->name);
-    intr_set_level(old_level);
   }
 }
   /*=====Yuqi's code end=====*/
@@ -265,7 +266,15 @@ thread_block (void)
   ASSERT (!intr_context ());
   ASSERT (intr_get_level () == INTR_OFF);
 
-  thread_current ()->status = THREAD_BLOCKED;
+/*===== Yuqi's code start ===== */
+  struct thread *t = thread_current();
+  if (t->sleeping == true) {
+	  struct list_elem *e = &t->elem;
+	  list_remove(e);
+	  list_push_back(&sleep_list, e);
+  }
+/*===== Yuqi's code end =====*/
+  t->status = THREAD_BLOCKED;
   schedule ();
 }
 
@@ -285,18 +294,19 @@ thread_unblock (struct thread *t)
 
   ASSERT (is_thread (t));
 
+  //debug
+  //printf("**** Now we're going to unblock tid = %d, status is now %d\n", t->tid, t->status);
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
-  //list_push_back (&ready_list, &t->elem);
-
+  
 /*=====Yuqi's code start=====*/
-    //printf("## This is in thread_unblock()\n");  
+    //printf("## This is in thread_unblock()\n");
 
     list_insert_ordered (&ready_list, &t->elem, 
                     thread_priority_less, NULL);
 
-    //just to make sure it is inserted.
-/*
+    /*just to make sure it is inserted.
+
     struct list_elem *e;
     struct thread *th;
     for (e = list_begin(&ready_list); e != list_tail(&ready_list);
@@ -304,17 +314,13 @@ thread_unblock (struct thread *t)
         th = list_entry(e, struct thread, elem);
         printf("## Thread tid = %d, name = %s, status = %d.\n", 
                 th->tid, (th->name==NULL)?"NULL":th->name, th->status);
+        ASSERT (e != list_next(e));
     }
-    */
 
 /*=====Yuqi's code end=====*/
 
   //printf("The newly created thread t is tid = %d\n", t->tid);
   t->status = THREAD_READY;
-  thread_current ()->status = THREAD_READY;
-  /**** Important notice!!
-   *     It's not safe to call printf() in this area!!! ****/
-  schedule(); /*=====Yuqi's code=====*/
   intr_set_level (old_level);
 }
 
@@ -384,6 +390,7 @@ thread_exit (void)
      when it calls thread_schedule_tail(). */
   intr_disable ();
   //printf("## In thread_exit()...\n");
+  list_remove (&thread_current()->elem);/*=====Yuqi's code=====*/
   list_remove (&thread_current()->allelem);
   thread_current ()->status = THREAD_DYING;
   schedule ();
@@ -402,8 +409,12 @@ thread_yield (void)
   ASSERT (!intr_context ());
 
   old_level = intr_disable ();
-  if (cur != idle_thread) 
-    list_push_back (&ready_list, &cur->elem);
+  if (cur != idle_thread) {
+    /*=====Yuqi's code=====*/
+    list_remove(&cur->elem);
+    list_insert_ordered (&ready_list, &cur->elem, thread_priority_less, NULL);
+  }
+  
   cur->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);
@@ -437,16 +448,10 @@ thread_set_priority (int new_priority)
   bool need_schedule = false;
   enum intr_level old_level;
   old_level = intr_disable();
-  
-  int highest_priority = list_entry(list_begin(&ready_list), \
-                   struct thread, elem)->priority;
-  if (new_priority > highest_priority)
-    need_schedule = true;
 
+  list_remove(&thread_current()->elem);
   list_insert_ordered (&ready_list, &thread_current()->elem, 
                   thread_priority_less, NULL);
-  if (need_schedule)
-    schedule();
   intr_set_level(old_level);
 /*=====Yuqi's code end=====*/
 }
@@ -455,7 +460,7 @@ thread_set_priority (int new_priority)
 int
 thread_get_priority (void) 
 {
-  printf("## In thread_get_priority()...\n");
+  //printf("## In thread_get_priority()...\n");
   return thread_current ()->priority;
 }
 
@@ -602,11 +607,22 @@ alloc_frame (struct thread *t, size_t size)
 static struct thread *
 next_thread_to_run (void) 
 {
-  if (list_empty (&ready_list))
-    return idle_thread;
-  else
-    //return list_entry (list_pop_front (&ready_list), struct thread, elem);
-    return list_entry (list_front(&ready_list), struct thread, elem);
+	if (list_empty (&ready_list))
+		return idle_thread;
+	/*=====Multiple modification by Yuqi=====*/
+	else {
+		struct list_elem *e = NULL;
+		struct thread *t = NULL;
+		e = list_begin(&ready_list);
+		while (!is_tail(e)) {
+			t = list_entry(e, struct thread, elem);
+			if (t->status == THREAD_READY)
+				return t;
+			else e = list_next(e);
+		}
+		return idle_thread;
+	}
+	/*=====End of multiple modification by Yuqi=====*/
 }
 
 /* Completes a thread switch by activating the new thread's page
@@ -672,6 +688,24 @@ schedule (void)
   ASSERT (intr_get_level () == INTR_OFF);
   ASSERT (cur->status != THREAD_RUNNING);
   ASSERT (is_thread (next));
+
+/*Debugging
+  enum thread_status old_status;
+  old_status = cur->status;
+  cur->status = THREAD_RUNNING;
+  printf("## in schedule(): curr is tid = %d (old status is %d), \
+			next is tid = %d...\n", cur->tid, old_status, next->tid);
+  struct list_elem *e;
+  struct thread *th;
+  for (e = list_begin(&ready_list); !is_tail(e);
+            e = list_next(e)) {
+    th = list_entry(e, struct thread, elem);
+    ASSERT(is_thread(th));
+    printf("## Thread tid = %d, name = %s, pri = %d, status = %d.\n", 
+            th->tid, (th->name==NULL)?"NULL":th->name, th->priority, th->status);
+  }
+  cur->status = old_status;
+/*End of debugging section*/
 
   if (cur != next)
     prev = switch_threads (cur, next);
